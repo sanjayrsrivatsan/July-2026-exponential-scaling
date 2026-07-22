@@ -8,13 +8,14 @@
     --grid:#d7e0ee;         /* recessive blue-gray gridlines */
     --axisln:#0d2a52;       /* axis lines (dark blue) */
     --border:rgba(13,42,82,0.14);
-    --ci:#2a6fd0;           /* combinatorial indexing */
-    --sc:#e8641f;           /* other single-cell methods */
+    --ci:#d62728;           /* combinatorial indexing (red) */
+    --sc:#111111;           /* other single-cell methods (black) */
+    --link:#2a6fd0;         /* hyperlink blue, kept independent of marker colors */
     --tipbg:#ffffff;
     --shadow:0 4px 16px rgba(13,42,82,0.18),0 0 0 1px rgba(13,42,82,0.08);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: "DejaVu Sans", "Bitstream Vera Sans", Verdana, Geneva, Arial, sans-serif;
     color: var(--ink);
-    background: #ffffff;   /* clean/clear background; set to transparent to show the page color through */
+    background: transparent;   /* clear background (tuned for a light page) */
     max-width: 940px;
     margin: 0 auto;
     padding: 6px 6px 10px;
@@ -25,7 +26,7 @@
   .viz-head h2{ font-size:20px; line-height:1.25; margin:0 0 4px; font-weight:680; letter-spacing:-0.01em; color:var(--ink); }
   .viz-head p.sub{ font-size:13.5px; line-height:1.45; margin:0 0 12px; color:var(--ink-soft); }
   .viz-head p.sub b{ color:var(--ink); }
-  .legend{ display:flex; gap:14px 20px; flex-wrap:wrap; margin:0 0 8px; font-size:12.5px; color:var(--ink); align-items:center; }
+  .legend{ display:flex; gap:14px 20px; flex-wrap:wrap; margin:0 0 8px; font-size:14px; color:var(--ink); align-items:center; }
   .legend span{ display:inline-flex; align-items:center; gap:7px; }
   .legend .swz{ width:12px; height:12px; border-radius:50%; display:inline-block; box-shadow:0 0 0 2px var(--halo); }
   .legend .shp{ width:14px; height:14px; display:inline-block; }
@@ -35,11 +36,13 @@
   .hit{ cursor:pointer; outline:none; }
   .mark.active{ stroke-width:2.5px; }
   .gridline{ stroke:var(--grid); stroke-width:1; }
-  .axisline{ stroke:var(--axisln); stroke-width:1.1; }
-  .tick{ fill:var(--ink); font-size:11.5px; }
+  .axistick{ stroke:var(--ink); stroke-width:1; }
+  .axistick.minor{ stroke:var(--ink); stroke-width:0.8; opacity:0.6; }
+  .spine{ stroke:var(--ink); stroke-width:1.2; fill:none; }
+  .tick{ fill:var(--ink); font-size:15.5px; }
   .tick.tabnum{ font-variant-numeric:tabular-nums; }
-  .axistitle{ fill:var(--ink); font-size:12.5px; font-weight:600; }
-  .plabel{ font-size:11px; fill:var(--ink); paint-order:stroke; stroke:var(--halo); stroke-width:3px; stroke-linejoin:round; }
+  .axistitle{ fill:var(--ink); font-size:17.5px; font-weight:600; }
+  .plabel{ font-size:13px; fill:var(--ink); paint-order:stroke; stroke:var(--halo); stroke-width:3.5px; stroke-linejoin:round; }
   .plabel.ci{ font-weight:650; }
   .plabel.sc{ font-weight:550; }
   .anno{ fill:var(--ink-soft); font-size:11.5px; font-style:italic; }
@@ -57,7 +60,7 @@
   .tooltip .pill{ font-size:11px; font-weight:600; padding:1.5px 7px; border-radius:20px; background:var(--grid); color:var(--ink); white-space:nowrap; }
   .tooltip .org{ color:var(--ink); }
   .tooltip .meth{ color:var(--ink-soft); margin-top:4px; }
-  .tooltip a.doi{ color:var(--ci); text-decoration:none; margin-top:5px; display:inline-block; word-break:break-all; pointer-events:auto; }
+  .tooltip a.doi{ color:var(--link); text-decoration:none; margin-top:5px; display:inline-block; word-break:break-all; pointer-events:auto; }
   .tooltip .note{ color:var(--sc); font-weight:600; margin-top:4px; font-size:11.5px; }
   .hint{ font-size:11.5px; color:var(--ink-soft); line-height:1.5; margin:12px 0 4px; }
   details.tableview{ margin:8px 0 2px; font-size:12.5px; }
@@ -67,7 +70,7 @@
   table.data th, table.data td{ text-align:left; padding:5px 12px 5px 0; border-bottom:1px solid var(--grid); white-space:nowrap; color:var(--ink); }
   table.data th{ color:var(--ink-soft); font-weight:600; position:sticky; top:0; background:var(--tipbg); }
   table.data td.num{ font-variant-numeric:tabular-nums; text-align:right; padding-right:18px; }
-  table.data a{ color:var(--ci); text-decoration:none; }
+  table.data a{ color:var(--link); text-decoration:none; }
   .dotkey{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
   .src{ font-size:11px; color:var(--ink-soft); line-height:1.55; margin:10px 0 2px; }
   .src b{ color:var(--ink); font-weight:600; }
@@ -76,7 +79,6 @@
 <figure class="viz-root" aria-label="Scatter plot of single-cell sequencing studies: publication year on the x-axis versus number of cells profiled on a base-10 logarithmic y-axis. Combinatorial-indexing methods are highlighted in blue.">
   <div class="viz-head">
     <h2>Exponential scaling of single-cell sequencing</h2>
-    <p class="sub">Cells (or nuclei) profiled per study over time; the y-axis is log<sub>10</sub>. In <b>combinatorial indexing</b>, molecules are barcoded across r rounds of split-and-pool, so resolvable identities grow as n<sup>r</sup> for only linear effort &mdash; these studies (blue) climb well above the droplet- and plate-based cloud (orange).</p>
   </div>
   <div class="legend" aria-hidden="true">
     <span><i class="swz" style="background:var(--ci)"></i>Combinatorial indexing (split-pool)</span>
@@ -89,7 +91,7 @@
     <svg class="chart" id="scChart" viewBox="0 0 1000 640" role="img"></svg>
     <div class="tooltip" id="scTip" role="status" aria-live="polite"></div>
   </div>
-  <p class="hint">Hover, tap, or keyboard-focus any point for its study, assay, organism, cell count, and DOI. Each point is the headline cell/nucleus count reported by that study; &ldquo;~&rdquo; marks an approximate or &ldquo;more-than&rdquo; figure. Points sharing a year are spread horizontally for legibility. Tahoe-100M (2025) is a preprint.</p>
+  <p class="hint">Hover, tap, or keyboard-focus any point for its study, assay, organism, cell count, and DOI. Each point is the headline cell/nucleus count reported by that study; &ldquo;~&rdquo; marks an approximate or &ldquo;more-than&rdquo; figure. Points sharing a year are spread horizontally for legibility.</p>
 
   <details class="tableview">
     <summary>Show data table (accessible / mobile-friendly)</summary>
@@ -128,7 +130,7 @@
     {y:2020, n:650000,     approx:true,  org:"Human cancer cell lines",      mod:"snRNA-seq",           method:"sci-Plex",          auth:"Srivatsan et al.",          doi:"10.1126/science.aax6234",    cat:"ci", lab:true, lp:"l", ltext:"sci-Plex"},
     {y:2020, n:350000,     approx:true,  org:"Mouse (aging, 23 tissues)",    mod:"scRNA-seq",           method:"Tabula Muris Senis",auth:"Tabula Muris Consortium",   doi:"10.1038/s41586-020-2496-1",  cat:"sc"},
     {y:2020, n:800000,     approx:true,  org:"Human fetal (15 organs)",      mod:"scATAC-seq",          method:"sci-ATAC-seq3",     auth:"Domcke et al.",             doi:"10.1126/science.aba7612",    cat:"ci", atac:true},
-    {y:2020, n:4000000,    approx:true,  org:"Human fetal (15 organs)",      mod:"scRNA-seq",           method:"sci-RNA-seq3 (fetal)",auth:"Cao et al.",              doi:"10.1126/science.aba7721",    cat:"ci", lab:true, lp:"r", ltext:"Human fetal atlas (4M)"},
+    {y:2020, n:4000000,    approx:true,  org:"Human fetal (15 organs)",      mod:"scRNA-seq",           method:"sci-RNA-seq3 (fetal)",auth:"Cao et al.",              doi:"10.1126/science.aba7721",    cat:"ci", lab:true, lp:"a", ltext:"Human fetal atlas (4M)"},
     {y:2021, n:120000,     approx:true,  org:"Mouse embryo",                 mod:"spatial scRNA-seq",   method:"sci-Space",         auth:"Srivatsan et al.",          doi:"10.1126/science.abb9536",    cat:"ci"},
     {y:2021, n:151788,     approx:false, org:"Human cell lines",            mod:"scRNA-seq",           method:"scifi-RNA-seq",     auth:"Datlinger et al.",          doi:"10.1038/s41592-021-01153-z", cat:"ci"},
     {y:2021, n:1462702,    approx:false, org:"Human (COVID-19)",             mod:"scRNA-seq",           method:"COVID-19 Immune Atlas",auth:"Ren et al.",             doi:"10.1016/j.cell.2021.01.053", cat:"sc"},
@@ -189,31 +191,51 @@
     return "";
   }
 
-  // ---- y gridlines + labels (powers of ten) ----
-  for(var e2 = 0; e2 <= 8; e2++){
-    var yy = sy(e2);
-    svg.appendChild(el("line", {x1:M.left, y1:yy, x2:M.left+pw, y2:yy, "class":"gridline"}));
-    var yl = el("text", {x:M.left-10, y:yy+4, "class":"tick tabnum", "text-anchor":"end"});
-    yl.textContent = yLabel(e2);
+  // ---- matplotlib-style frame + ticks (inward major & minor) ----
+  var x0 = M.left, x1e = M.left + pw, y0 = M.top, y1e = M.top + ph;
+  var TMAJ = 7, TMIN = 4;
+
+  // y-axis: major decade ticks + labels, minor ticks at 2..9 of each decade, mirrored inward on both spines
+  for(var e3 = 0; e3 <= 8; e3++){
+    var ym = sy(e3);
+    svg.appendChild(el("line", {x1:x0, y1:ym, x2:x0+TMAJ, y2:ym, "class":"axistick"}));
+    svg.appendChild(el("line", {x1:x1e, y1:ym, x2:x1e-TMAJ, y2:ym, "class":"axistick"}));
+    var yl = el("text", {x:x0-9, y:ym+4, "class":"tick tabnum", "text-anchor":"end"});
+    yl.textContent = yLabel(e3);
     svg.appendChild(yl);
   }
-  var yt = el("text", {"class":"axistitle", "text-anchor":"middle", transform:"translate(18,"+(M.top+ph/2)+") rotate(-90)"});
-  yt.textContent = "Cells profiled per study";
-  svg.appendChild(yt);
+  for(var e4 = 0; e4 <= 8; e4++){
+    for(var k = 2; k <= 9; k++){
+      var lv = e4 + Math.log(k)/Math.LN10;
+      if(lv > ymax || lv < ymin) continue;
+      var ymm = sy(lv);
+      svg.appendChild(el("line", {x1:x0, y1:ymm, x2:x0+TMIN, y2:ymm, "class":"axistick minor"}));
+      svg.appendChild(el("line", {x1:x1e, y1:ymm, x2:x1e-TMIN, y2:ymm, "class":"axistick minor"}));
+    }
+  }
 
-  // ---- x axis (years) ----
-  svg.appendChild(el("line", {x1:M.left, y1:M.top+ph, x2:M.left+pw, y2:M.top+ph, "class":"axisline"}));
+  // x-axis: major ticks (labeled odd years) + minor ticks (each year), mirrored inward on top & bottom
   for(var yr = 2009; yr <= 2025; yr++){
     var xx = sx(yr);
-    var labeled = (yr % 2 === 1);
-    svg.appendChild(el("line", {x1:xx, y1:M.top+ph, x2:xx, y2:M.top+ph+(labeled?6:3), "class":"axisline"}));
-    if(labeled){
-      svg.appendChild(el("line", {x1:xx, y1:M.top, x2:xx, y2:M.top+ph, "class":"gridline", opacity:"0.5"}));
-      var xl = el("text", {x:xx, y:M.top+ph+22, "class":"tick tabnum", "text-anchor":"middle"});
+    var isMaj = (yr % 2 === 1);
+    var tl = isMaj ? TMAJ : TMIN;
+    var cls = "axistick" + (isMaj ? "" : " minor");
+    svg.appendChild(el("line", {x1:xx, y1:y1e, x2:xx, y2:y1e-tl, "class":cls}));
+    svg.appendChild(el("line", {x1:xx, y1:y0,  x2:xx, y2:y0+tl,  "class":cls}));
+    if(isMaj){
+      var xl = el("text", {x:xx, y:y1e+20, "class":"tick tabnum", "text-anchor":"middle"});
       xl.textContent = yr;
       svg.appendChild(xl);
     }
   }
+
+  // bounding box (spines on all four sides)
+  svg.appendChild(el("rect", {x:x0, y:y0, width:pw, height:ph, "class":"spine"}));
+
+  // axis titles
+  var yt = el("text", {"class":"axistitle", "text-anchor":"middle", transform:"translate(20,"+(M.top+ph/2)+") rotate(-90)"});
+  yt.textContent = "Cells profiled per study";
+  svg.appendChild(yt);
   var xt = el("text", {x:M.left+pw/2, y:H-8, "class":"axistitle", "text-anchor":"middle"});
   xt.textContent = "Year published";
   svg.appendChild(xt);
@@ -228,20 +250,12 @@
     g.forEach(function(d,i){ d.dx = (m===1) ? 0 : (-span/2 + span * i/(m-1)); });
   });
 
-  // ---- annotation ----
-  var an1 = el("text", {x:sx(2011.7), y:sy(7.55), "class":"anno", "text-anchor":"start"});
-  an1.textContent = "n^r barcodes for linear effort";
-  svg.appendChild(an1);
-  var an2 = el("text", {x:sx(2022.2), y:sy(4.55), "class":"anno", "text-anchor":"middle"});
-  an2.textContent = "droplet / plate cell atlases";
-  svg.appendChild(an2);
-
   // ---- label offsets ----
   function labelOffset(lp){
-    if(lp==="a") return {dx:0,  dy:-12, anchor:"middle"};
-    if(lp==="b") return {dx:0,  dy:20,  anchor:"middle"};
-    if(lp==="l") return {dx:-11,dy:4,   anchor:"end"};
-    return {dx:11, dy:4, anchor:"start"};
+    if(lp==="a") return {dx:0,  dy:-14, anchor:"middle"};
+    if(lp==="b") return {dx:0,  dy:23,  anchor:"middle"};
+    if(lp==="l") return {dx:-13,dy:5,   anchor:"end"};
+    return {dx:13, dy:5, anchor:"start"};
   }
 
   var layer = el("g", {});
@@ -254,20 +268,13 @@
     d.py = sy(log10(d.n));
     var color = d.cat === "ci" ? "var(--ci)" : "var(--sc)";
 
-    if(d.lab){
-      var off = labelOffset(d.lp);
-      var lab = el("text", {x:d.px+off.dx, y:d.py+off.dy, "class":"plabel "+d.cat, "text-anchor":off.anchor});
-      lab.textContent = d.ltext || d.method;
-      layer.appendChild(lab);
-    }
-
     var mark;
     if(d.atac){
-      var r = 6.4;
+      var r = 6.8;
       mark = el("path", {d:"M "+d.px+" "+(d.py-r)+" L "+(d.px+r)+" "+d.py+" L "+d.px+" "+(d.py+r)+" L "+(d.px-r)+" "+d.py+" Z",
-        fill:color, stroke:"var(--halo)", "stroke-width":1.5, "class":"mark"});
+        fill:color, stroke:"var(--halo)", "stroke-width":1.6, "class":"mark"});
     } else {
-      mark = el("circle", {cx:d.px, cy:d.py, r:5.4, fill:color, stroke:"var(--halo)", "stroke-width":1.5, "class":"mark"});
+      mark = el("circle", {cx:d.px, cy:d.py, r:5.8, fill:color, stroke:"var(--halo)", "stroke-width":1.6, "class":"mark"});
     }
     d._mark = mark;
     layer.appendChild(mark);
