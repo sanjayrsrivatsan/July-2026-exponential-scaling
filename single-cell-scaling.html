@@ -1,8 +1,9 @@
 <title>Exponential scaling of single-cell sequencing</title>
 <style>
+  html, body{ background:#f7f2e7; }   /* cream page background (GitHub Pages / standalone) */
   .viz-root{
     /* Clear background, dark-blue ink. Designed for a light page (e.g. Substack). */
-    --halo:#ffffff;
+    --halo:#f7f2e7;   /* = page cream, so marker keylines blend and only separate overlaps */
     --ink:#0d2a52;          /* dark blue: axes, ticks, titles, labels */
     --ink-soft:#3f5f8c;     /* lighter navy: subtitle / secondary */
     --grid:#d7e0ee;         /* recessive blue-gray gridlines */
@@ -13,7 +14,8 @@
     --link:#2a6fd0;         /* hyperlink blue, kept independent of marker colors */
     --tipbg:#ffffff;
     --shadow:0 4px 16px rgba(13,42,82,0.18),0 0 0 1px rgba(13,42,82,0.08);
-    font-family: "DejaVu Sans", "Bitstream Vera Sans", Verdana, Geneva, Arial, sans-serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
     color: var(--ink);
     background: transparent;   /* clear background (tuned for a light page) */
     max-width: 940px;
@@ -23,10 +25,10 @@
     -webkit-text-size-adjust: 100%;
   }
   .viz-root *{ box-sizing:border-box; }
-  .viz-head h2{ font-size:20px; line-height:1.25; margin:0 0 4px; font-weight:680; letter-spacing:-0.01em; color:var(--ink); }
+  .viz-head h2{ font-size:21px; line-height:1.25; margin:0 0 4px; font-weight:400; letter-spacing:0.01em; color:var(--ink); }
   .viz-head p.sub{ font-size:13.5px; line-height:1.45; margin:0 0 12px; color:var(--ink-soft); }
   .viz-head p.sub b{ color:var(--ink); }
-  .legend{ display:flex; gap:14px 20px; flex-wrap:wrap; margin:0 0 8px; font-size:14px; color:var(--ink); align-items:center; }
+  .legend{ display:flex; gap:14px 20px; flex-wrap:wrap; margin:0 0 8px; font-size:14px; font-weight:400; color:var(--ink); align-items:center; }
   .legend span{ display:inline-flex; align-items:center; gap:7px; }
   .legend .swz{ width:12px; height:12px; border-radius:50%; display:inline-block; box-shadow:0 0 0 2px var(--halo); }
   .legend .shp{ width:14px; height:14px; display:inline-block; }
@@ -39,9 +41,9 @@
   .axistick{ stroke:var(--ink); stroke-width:1; }
   .axistick.minor{ stroke:var(--ink); stroke-width:0.8; opacity:0.6; }
   .spine{ stroke:var(--ink); stroke-width:1.2; fill:none; }
-  .tick{ fill:var(--ink); font-size:15.5px; }
+  .tick{ fill:var(--ink); font-size:15.5px; font-weight:400; }
   .tick.tabnum{ font-variant-numeric:tabular-nums; }
-  .axistitle{ fill:var(--ink); font-size:17.5px; font-weight:600; }
+  .axistitle{ fill:var(--ink); font-size:17.5px; font-weight:500; }
   .plabel{ font-size:13px; fill:var(--ink); paint-order:stroke; stroke:var(--halo); stroke-width:3.5px; stroke-linejoin:round; }
   .plabel.ci{ font-weight:650; }
   .plabel.sc{ font-weight:550; }
