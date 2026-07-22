@@ -1,9 +1,8 @@
 <title>Exponential scaling of single-cell sequencing</title>
 <style>
-  html, body{ background:#f7f2e7; }   /* cream page background (GitHub Pages / standalone) */
   .viz-root{
     /* Clear background, dark-blue ink. Designed for a light page (e.g. Substack). */
-    --halo:#f7f2e7;   /* = page cream, so marker keylines blend and only separate overlaps */
+    --halo:#ffffff;   /* white keyline so overlapping markers stay separated on a light page */
     --ink:#0d2a52;          /* dark blue: axes, ticks, titles, labels */
     --ink-soft:#3f5f8c;     /* lighter navy: subtitle / secondary */
     --grid:#d7e0ee;         /* recessive blue-gray gridlines */
@@ -41,25 +40,25 @@
   .axistick{ stroke:var(--ink); stroke-width:1; }
   .axistick.minor{ stroke:var(--ink); stroke-width:0.8; opacity:0.6; }
   .spine{ stroke:var(--ink); stroke-width:1.2; fill:none; }
-  .tick{ fill:var(--ink); font-size:15.5px; font-weight:400; }
+  .tick{ fill:var(--ink); font-size:18px; font-weight:400; }
   .tick.tabnum{ font-variant-numeric:tabular-nums; }
-  .axistitle{ fill:var(--ink); font-size:17.5px; font-weight:500; }
+  .axistitle{ fill:var(--ink); font-size:20.5px; font-weight:500; }
   .plabel{ font-size:13px; fill:var(--ink); paint-order:stroke; stroke:var(--halo); stroke-width:3.5px; stroke-linejoin:round; }
   .plabel.ci{ font-weight:650; }
   .plabel.sc{ font-weight:550; }
   .anno{ fill:var(--ink-soft); font-size:11.5px; font-style:italic; }
   .tooltip{
-    position:absolute; z-index:5; pointer-events:none; max-width:280px; min-width:150px;
+    position:absolute; z-index:5; pointer-events:none; max-width:350px; min-width:190px;
     background:var(--tipbg); color:var(--ink);
-    border-radius:10px; box-shadow:var(--shadow);
-    padding:11px 13px; font-size:12.5px; line-height:1.42;
+    border-radius:12px; box-shadow:var(--shadow);
+    padding:15px 18px; font-size:14.5px; line-height:1.46;
     opacity:0; transform:translateY(2px); transition:opacity .09s ease;
   }
   .tooltip.show{ opacity:1; transform:none; }
-  .tooltip .val{ font-size:16px; font-weight:680; letter-spacing:-0.01em; display:flex; align-items:baseline; gap:7px; color:var(--ink); }
-  .tooltip .val .sw{ width:9px; height:9px; border-radius:50%; flex:none; transform:translateY(1px); }
+  .tooltip .val{ font-size:19.5px; font-weight:600; letter-spacing:-0.01em; display:flex; align-items:baseline; gap:8px; color:var(--ink); }
+  .tooltip .val .sw{ width:11px; height:11px; border-radius:50%; flex:none; transform:translateY(1px); }
   .tooltip .row2{ margin-top:5px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
-  .tooltip .pill{ font-size:11px; font-weight:600; padding:1.5px 7px; border-radius:20px; background:var(--grid); color:var(--ink); white-space:nowrap; }
+  .tooltip .pill{ font-size:12.5px; font-weight:600; padding:2.5px 9px; border-radius:20px; background:var(--grid); color:var(--ink); white-space:nowrap; }
   .tooltip .org{ color:var(--ink); }
   .tooltip .meth{ color:var(--ink-soft); margin-top:4px; }
   .tooltip a.doi{ color:var(--link); text-decoration:none; margin-top:5px; display:inline-block; word-break:break-all; pointer-events:auto; }
@@ -161,7 +160,7 @@
   var wrap = svg.parentNode;
 
   var W = 1000, H = 640;
-  var M = {top:30, right:58, bottom:56, left:74};
+  var M = {top:30, right:58, bottom:66, left:100};
   var pw = W - M.left - M.right;
   var ph = H - M.top - M.bottom;
 
@@ -235,7 +234,7 @@
   svg.appendChild(el("rect", {x:x0, y:y0, width:pw, height:ph, "class":"spine"}));
 
   // axis titles
-  var yt = el("text", {"class":"axistitle", "text-anchor":"middle", transform:"translate(20,"+(M.top+ph/2)+") rotate(-90)"});
+  var yt = el("text", {"class":"axistitle", "text-anchor":"middle", transform:"translate(26,"+(M.top+ph/2)+") rotate(-90)"});
   yt.textContent = "Cells profiled per study";
   svg.appendChild(yt);
   var xt = el("text", {x:M.left+pw/2, y:H-8, "class":"axistitle", "text-anchor":"middle"});
