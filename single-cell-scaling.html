@@ -1,0 +1,368 @@
+<title>Exponential scaling of single-cell sequencing</title>
+<style>
+  .viz-root{
+    /* Clear background, dark-blue ink. Designed for a light page (e.g. Substack). */
+    --halo:#ffffff;
+    --ink:#0d2a52;          /* dark blue: axes, ticks, titles, labels */
+    --ink-soft:#3f5f8c;     /* lighter navy: subtitle / secondary */
+    --grid:#d7e0ee;         /* recessive blue-gray gridlines */
+    --axisln:#0d2a52;       /* axis lines (dark blue) */
+    --border:rgba(13,42,82,0.14);
+    --ci:#2a6fd0;           /* combinatorial indexing */
+    --sc:#e8641f;           /* other single-cell methods */
+    --tipbg:#ffffff;
+    --shadow:0 4px 16px rgba(13,42,82,0.18),0 0 0 1px rgba(13,42,82,0.08);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: #ffffff;   /* clean/clear background; set to transparent to show the page color through */
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 6px 6px 10px;
+    box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+  }
+  .viz-root *{ box-sizing:border-box; }
+  .viz-head h2{ font-size:20px; line-height:1.25; margin:0 0 4px; font-weight:680; letter-spacing:-0.01em; color:var(--ink); }
+  .viz-head p.sub{ font-size:13.5px; line-height:1.45; margin:0 0 12px; color:var(--ink-soft); }
+  .viz-head p.sub b{ color:var(--ink); }
+  .legend{ display:flex; gap:14px 20px; flex-wrap:wrap; margin:0 0 8px; font-size:12.5px; color:var(--ink); align-items:center; }
+  .legend span{ display:inline-flex; align-items:center; gap:7px; }
+  .legend .swz{ width:12px; height:12px; border-radius:50%; display:inline-block; box-shadow:0 0 0 2px var(--halo); }
+  .legend .shp{ width:14px; height:14px; display:inline-block; }
+  .legend .sep{ width:1px; height:14px; background:var(--border); }
+  .chart-wrap{ position:relative; width:100%; }
+  svg.chart{ display:block; width:100%; height:auto; overflow:visible; touch-action:manipulation; }
+  .hit{ cursor:pointer; outline:none; }
+  .mark.active{ stroke-width:2.5px; }
+  .gridline{ stroke:var(--grid); stroke-width:1; }
+  .axisline{ stroke:var(--axisln); stroke-width:1.1; }
+  .tick{ fill:var(--ink); font-size:11.5px; }
+  .tick.tabnum{ font-variant-numeric:tabular-nums; }
+  .axistitle{ fill:var(--ink); font-size:12.5px; font-weight:600; }
+  .plabel{ font-size:11px; fill:var(--ink); paint-order:stroke; stroke:var(--halo); stroke-width:3px; stroke-linejoin:round; }
+  .plabel.ci{ font-weight:650; }
+  .plabel.sc{ font-weight:550; }
+  .anno{ fill:var(--ink-soft); font-size:11.5px; font-style:italic; }
+  .tooltip{
+    position:absolute; z-index:5; pointer-events:none; max-width:280px; min-width:150px;
+    background:var(--tipbg); color:var(--ink);
+    border-radius:10px; box-shadow:var(--shadow);
+    padding:11px 13px; font-size:12.5px; line-height:1.42;
+    opacity:0; transform:translateY(2px); transition:opacity .09s ease;
+  }
+  .tooltip.show{ opacity:1; transform:none; }
+  .tooltip .val{ font-size:16px; font-weight:680; letter-spacing:-0.01em; display:flex; align-items:baseline; gap:7px; color:var(--ink); }
+  .tooltip .val .sw{ width:9px; height:9px; border-radius:50%; flex:none; transform:translateY(1px); }
+  .tooltip .row2{ margin-top:5px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .tooltip .pill{ font-size:11px; font-weight:600; padding:1.5px 7px; border-radius:20px; background:var(--grid); color:var(--ink); white-space:nowrap; }
+  .tooltip .org{ color:var(--ink); }
+  .tooltip .meth{ color:var(--ink-soft); margin-top:4px; }
+  .tooltip a.doi{ color:var(--ci); text-decoration:none; margin-top:5px; display:inline-block; word-break:break-all; pointer-events:auto; }
+  .tooltip .note{ color:var(--sc); font-weight:600; margin-top:4px; font-size:11.5px; }
+  .hint{ font-size:11.5px; color:var(--ink-soft); line-height:1.5; margin:12px 0 4px; }
+  details.tableview{ margin:8px 0 2px; font-size:12.5px; }
+  details.tableview summary{ cursor:pointer; color:var(--ink); font-weight:600; padding:4px 0; }
+  .tblscroll{ overflow-x:auto; margin-top:6px; }
+  table.data{ border-collapse:collapse; width:100%; font-size:12px; }
+  table.data th, table.data td{ text-align:left; padding:5px 12px 5px 0; border-bottom:1px solid var(--grid); white-space:nowrap; color:var(--ink); }
+  table.data th{ color:var(--ink-soft); font-weight:600; position:sticky; top:0; background:var(--tipbg); }
+  table.data td.num{ font-variant-numeric:tabular-nums; text-align:right; padding-right:18px; }
+  table.data a{ color:var(--ci); text-decoration:none; }
+  .dotkey{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .src{ font-size:11px; color:var(--ink-soft); line-height:1.55; margin:10px 0 2px; }
+  .src b{ color:var(--ink); font-weight:600; }
+</style>
+
+<figure class="viz-root" aria-label="Scatter plot of single-cell sequencing studies: publication year on the x-axis versus number of cells profiled on a base-10 logarithmic y-axis. Combinatorial-indexing methods are highlighted in blue.">
+  <div class="viz-head">
+    <h2>Exponential scaling of single-cell sequencing</h2>
+    <p class="sub">Cells (or nuclei) profiled per study over time; the y-axis is log<sub>10</sub>. In <b>combinatorial indexing</b>, molecules are barcoded across r rounds of split-and-pool, so resolvable identities grow as n<sup>r</sup> for only linear effort &mdash; these studies (blue) climb well above the droplet- and plate-based cloud (orange).</p>
+  </div>
+  <div class="legend" aria-hidden="true">
+    <span><i class="swz" style="background:var(--ci)"></i>Combinatorial indexing (split-pool)</span>
+    <span><i class="swz" style="background:var(--sc)"></i>Other single-cell methods</span>
+    <span class="sep"></span>
+    <span><svg class="shp" viewBox="-8 -8 16 16"><circle r="5.5" fill="var(--ink)"></circle></svg>Transcriptome (RNA)</span>
+    <span><svg class="shp" viewBox="-8 -8 16 16"><path d="M0,-6.5 L6.5,0 L0,6.5 L-6.5,0 Z" fill="var(--ink)"></path></svg>Chromatin (ATAC)</span>
+  </div>
+  <div class="chart-wrap">
+    <svg class="chart" id="scChart" viewBox="0 0 1000 640" role="img"></svg>
+    <div class="tooltip" id="scTip" role="status" aria-live="polite"></div>
+  </div>
+  <p class="hint">Hover, tap, or keyboard-focus any point for its study, assay, organism, cell count, and DOI. Each point is the headline cell/nucleus count reported by that study; &ldquo;~&rdquo; marks an approximate or &ldquo;more-than&rdquo; figure. Points sharing a year are spread horizontally for legibility. Tahoe-100M (2025) is a preprint.</p>
+
+  <details class="tableview">
+    <summary>Show data table (accessible / mobile-friendly)</summary>
+    <div class="tblscroll">
+      <table class="data" id="scTable">
+        <thead><tr><th>Year</th><th>Method / study</th><th>Assay</th><th class="num">Cells</th><th>Organism</th><th>Class</th><th>DOI</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </details>
+  <p class="src"><b>Notes.</b> Meta-atlases that integrate many prior studies (e.g. the Human Lung Cell Atlas here; and aggregators such as CZ CELLxGENE, &gt;90M cells) are cell counts of assembled corpora, not single sequencing efforts. Whole-brain atlas counts are the droplet scRNA-seq fraction (excluding spatial/MERFISH). Cell counts are author-reported headline figures verified against each paper.</p>
+</figure>
+
+<script>
+(function(){
+  // Ensure responsive layout when hosted directly / embedded in an iframe.
+  if(!document.querySelector('meta[name="viewport"]')){
+    var mv=document.createElement("meta"); mv.name="viewport";
+    mv.content="width=device-width, initial-scale=1";
+    (document.head||document.documentElement).appendChild(mv);
+  }
+  // cat: 'ci' combinatorial indexing | 'sc' other. atac:true => chromatin (diamond). lab:true => static label.
+  var DATA = [
+    {y:2009, n:1,          approx:false, org:"Mouse",                        mod:"scRNA-seq",           method:"First scRNA-seq",   auth:"Tang et al.",               doi:"10.1038/nmeth.1315",         cat:"sc", lab:true, lp:"r", ltext:"First scRNA-seq"},
+    {y:2011, n:85,         approx:false, org:"Mouse",                        mod:"scRNA-seq",           method:"STRT-seq",          auth:"Islam et al.",              doi:"10.1101/gr.110882.110",      cat:"sc"},
+    {y:2015, n:10000,      approx:true,  org:"Mouse ES cells",               mod:"scRNA-seq",           method:"inDrops",           auth:"Klein et al.",              doi:"10.1016/j.cell.2015.04.044", cat:"sc"},
+    {y:2015, n:15000,      approx:true,  org:"Human & mouse cell lines",     mod:"scATAC-seq",          method:"sci-ATAC-seq",      auth:"Cusanovich et al.",         doi:"10.1126/science.aab1601",    cat:"ci", atac:true, lab:true, lp:"l", ltext:"sci-ATAC-seq"},
+    {y:2015, n:44808,      approx:false, org:"Mouse retina",                 mod:"scRNA-seq",           method:"Drop-seq",          auth:"Macosko et al.",            doi:"10.1016/j.cell.2015.05.002", cat:"sc", lab:true, lp:"a", ltext:"Drop-seq"},
+    {y:2017, n:42035,      approx:false, org:"C. elegans",                   mod:"scRNA-seq",           method:"sci-RNA-seq",       auth:"Cao et al.",                doi:"10.1126/science.aam8940",    cat:"ci", lab:true, lp:"a", ltext:"sci-RNA-seq"},
+    {y:2017, n:250000,     approx:true,  org:"Human (+ mouse controls)",     mod:"scRNA-seq",           method:"10x Chromium",      auth:"Zheng et al.",              doi:"10.1038/ncomms14049",        cat:"sc", lab:true, lp:"r", ltext:"10x Chromium"},
+    {y:2018, n:100000,     approx:true,  org:"Mouse (20 organs)",            mod:"scRNA-seq",           method:"Tabula Muris",      auth:"Tabula Muris Consortium",   doi:"10.1038/s41586-018-0590-4",  cat:"sc"},
+    {y:2018, n:156049,     approx:false, org:"Mouse (brain & spinal cord)",  mod:"scRNA-seq",           method:"SPLiT-seq",         auth:"Rosenberg et al.",          doi:"10.1126/science.aam8999",    cat:"ci", lab:true, lp:"l", ltext:"SPLiT-seq"},
+    {y:2018, n:400000,     approx:true,  org:"Mouse",                        mod:"scRNA-seq",           method:"Microwell-seq",     auth:"Han et al.",                doi:"10.1016/j.cell.2018.02.001", cat:"sc"},
+    {y:2019, n:2000000,    approx:true,  org:"Mouse embryo",                 mod:"scRNA-seq",           method:"sci-RNA-seq3 (MOCA)",auth:"Cao et al.",               doi:"10.1038/s41586-019-0969-x",  cat:"ci", lab:true, lp:"a", ltext:"sci-RNA-seq3 (MOCA)"},
+    {y:2020, n:486134,     approx:false, org:"Human heart",                  mod:"sn/scRNA-seq",        method:"Heart Cell Atlas",  auth:"Litvinukova et al.",        doi:"10.1038/s41586-020-2797-4",  cat:"sc"},
+    {y:2020, n:650000,     approx:true,  org:"Human cancer cell lines",      mod:"snRNA-seq",           method:"sci-Plex",          auth:"Srivatsan et al.",          doi:"10.1126/science.aax6234",    cat:"ci", lab:true, lp:"l", ltext:"sci-Plex"},
+    {y:2020, n:350000,     approx:true,  org:"Mouse (aging, 23 tissues)",    mod:"scRNA-seq",           method:"Tabula Muris Senis",auth:"Tabula Muris Consortium",   doi:"10.1038/s41586-020-2496-1",  cat:"sc"},
+    {y:2020, n:800000,     approx:true,  org:"Human fetal (15 organs)",      mod:"scATAC-seq",          method:"sci-ATAC-seq3",     auth:"Domcke et al.",             doi:"10.1126/science.aba7612",    cat:"ci", atac:true},
+    {y:2020, n:4000000,    approx:true,  org:"Human fetal (15 organs)",      mod:"scRNA-seq",           method:"sci-RNA-seq3 (fetal)",auth:"Cao et al.",              doi:"10.1126/science.aba7721",    cat:"ci", lab:true, lp:"r", ltext:"Human fetal atlas (4M)"},
+    {y:2021, n:120000,     approx:true,  org:"Mouse embryo",                 mod:"spatial scRNA-seq",   method:"sci-Space",         auth:"Srivatsan et al.",          doi:"10.1126/science.abb9536",    cat:"ci"},
+    {y:2021, n:151788,     approx:false, org:"Human cell lines",            mod:"scRNA-seq",           method:"scifi-RNA-seq",     auth:"Datlinger et al.",          doi:"10.1038/s41592-021-01153-z", cat:"ci"},
+    {y:2021, n:1462702,    approx:false, org:"Human (COVID-19)",             mod:"scRNA-seq",           method:"COVID-19 Immune Atlas",auth:"Ren et al.",             doi:"10.1016/j.cell.2021.01.053", cat:"sc"},
+    {y:2021, n:428000,     approx:true,  org:"Human intestine",              mod:"scRNA-seq",           method:"Gut Cell Atlas",    auth:"Elmentaite et al.",         doi:"10.1038/s41586-021-03852-1", cat:"sc"},
+    {y:2022, n:500000,     approx:true,  org:"Human (24 tissues)",           mod:"scRNA-seq",           method:"Tabula Sapiens",    auth:"Tabula Sapiens Consortium", doi:"10.1126/science.abl4896",    cat:"sc"},
+    {y:2022, n:209126,     approx:false, org:"Human (GTEx, 8 tissues)",      mod:"snRNA-seq",           method:"GTEx snRNA-seq",    auth:"Eraslan et al.",            doi:"10.1126/science.abl4290",    cat:"sc"},
+    {y:2022, n:329762,     approx:false, org:"Human (16 tissues)",           mod:"scRNA-seq",           method:"Cross-tissue Immune",auth:"Dominguez Conde et al.",   doi:"10.1126/science.abl5197",    cat:"sc"},
+    {y:2022, n:908178,     approx:false, org:"Human prenatal (9 tissues)",   mod:"scRNA-seq",           method:"Developing Immune", auth:"Suo et al.",                doi:"10.1126/science.abo0510",    cat:"sc"},
+    {y:2022, n:166149,     approx:false, org:"Human adipose",                mod:"snRNA-seq",           method:"White Adipose Atlas",auth:"Emont et al.",             doi:"10.1038/s41586-022-04518-2", cat:"sc"},
+    {y:2023, n:1500000,    approx:true,  org:"Mouse & human brain",          mod:"scRNA-seq",           method:"EasySci",           auth:"Sziraki et al.",            doi:"10.1038/s41588-023-01572-y", cat:"ci"},
+    {y:2023, n:1627857,    approx:false, org:"Mouse embryo (26 genotypes)",  mod:"scRNA-seq",           method:"sci-RNA-seq3 (embryo)",auth:"Huang et al.",            doi:"10.1038/s41586-023-06548-w", cat:"ci"},
+    {y:2023, n:3200000,    approx:true,  org:"Zebrafish embryo",             mod:"scRNA-seq",           method:"ZSCAPE (sci-RNA-seq3)",auth:"Saunders, Srivatsan et al.",doi:"10.1038/s41586-023-06720-2",cat:"ci", lab:true, lp:"r", ltext:"Zebrafish (ZSCAPE)"},
+    {y:2023, n:3000000,    approx:true,  org:"Human brain",                  mod:"snRNA-seq",           method:"Adult Human Brain", auth:"Siletti et al.",            doi:"10.1126/science.add7046",    cat:"sc"},
+    {y:2023, n:4000000,    approx:true,  org:"Mouse brain (whole)",          mod:"scRNA-seq",           method:"Whole Mouse Brain", auth:"Yao et al.",                doi:"10.1038/s41586-023-06812-z", cat:"sc"},
+    {y:2023, n:1665937,    approx:false, org:"Human fetal brain",            mod:"scRNA-seq",           method:"Developing Human Brain",auth:"Braun et al.",           doi:"10.1126/science.adf1226",    cat:"sc"},
+    {y:2023, n:400000,     approx:true,  org:"Human kidney",                 mod:"snRNA-seq",           method:"Kidney Atlas (KPMP)",auth:"Lake et al.",              doi:"10.1038/s41586-023-05769-3", cat:"sc"},
+    {y:2023, n:2400000,    approx:true,  org:"Human lung",                   mod:"scRNA-seq",           method:"Lung Cell Atlas",   auth:"Sikkema et al.",            doi:"10.1038/s41591-023-02327-2", cat:"sc", meta:true},
+    {y:2024, n:12400000,   approx:true,  org:"Mouse embryo (83 embryos)",    mod:"snRNA-seq",           method:"sci-RNA-seq3 (time-lapse)",auth:"Qiu et al.",           doi:"10.1038/s41586-024-07069-w", cat:"ci", lab:true, lp:"l", ltext:"Mouse embryo (12M)"},
+    {y:2024, n:21786931,   approx:false, org:"Mouse (aging, 623 samples)",   mod:"snRNA-seq",           method:"PanSci (EasySci)",  auth:"Zhang et al.",              doi:"10.1126/science.adn3949",    cat:"ci", lab:true, lp:"a", ltext:"PanSci (22M)"},
+    {y:2025, n:100000000,  approx:true,  org:"Human cancer cell lines",      mod:"scRNA-seq",           method:"Tahoe-100M (Parse Evercode)",auth:"Zhang et al.",        doi:"10.1101/2025.02.20.639398",  cat:"ci", lab:true, lp:"l", ltext:"Tahoe-100M", preprint:true}
+  ];
+
+  var SVGNS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("scChart");
+  var tip = document.getElementById("scTip");
+  var wrap = svg.parentNode;
+
+  var W = 1000, H = 640;
+  var M = {top:30, right:58, bottom:56, left:74};
+  var pw = W - M.left - M.right;
+  var ph = H - M.top - M.bottom;
+
+  var xmin = 2008, xmax = 2026;
+  var ymin = -0.35, ymax = 8.4;      // log10 domain, padded
+
+  function sx(year){ return M.left + (year - xmin) / (xmax - xmin) * pw; }
+  function sy(logv){ return M.top + (ymax - logv) / (ymax - ymin) * ph; }
+  function log10(v){ return Math.log(v) / Math.LN10; }
+  function el(name, attrs){
+    var e = document.createElementNS(SVGNS, name);
+    if(attrs){ for(var k in attrs){ e.setAttribute(k, attrs[k]); } }
+    return e;
+  }
+  function fmt(n){ return n.toLocaleString("en-US"); }
+  function shortN(n){
+    if(n >= 1e6) return (n % 1e6 === 0 ? (n/1e6) : (n/1e6).toFixed(n>=1e7?0:1)) + "M";
+    if(n >= 1e3) return Math.round(n/1e3) + "k";
+    return String(n);
+  }
+  function yLabel(exp){
+    if(exp <= 2) return fmt(Math.round(Math.pow(10, exp)));
+    if(exp === 3) return "1k";
+    if(exp === 4) return "10k";
+    if(exp === 5) return "100k";
+    if(exp === 6) return "1M";
+    if(exp === 7) return "10M";
+    if(exp === 8) return "100M";
+    return "";
+  }
+
+  // ---- y gridlines + labels (powers of ten) ----
+  for(var e2 = 0; e2 <= 8; e2++){
+    var yy = sy(e2);
+    svg.appendChild(el("line", {x1:M.left, y1:yy, x2:M.left+pw, y2:yy, "class":"gridline"}));
+    var yl = el("text", {x:M.left-10, y:yy+4, "class":"tick tabnum", "text-anchor":"end"});
+    yl.textContent = yLabel(e2);
+    svg.appendChild(yl);
+  }
+  var yt = el("text", {"class":"axistitle", "text-anchor":"middle", transform:"translate(18,"+(M.top+ph/2)+") rotate(-90)"});
+  yt.textContent = "Cells profiled per study";
+  svg.appendChild(yt);
+
+  // ---- x axis (years) ----
+  svg.appendChild(el("line", {x1:M.left, y1:M.top+ph, x2:M.left+pw, y2:M.top+ph, "class":"axisline"}));
+  for(var yr = 2009; yr <= 2025; yr++){
+    var xx = sx(yr);
+    var labeled = (yr % 2 === 1);
+    svg.appendChild(el("line", {x1:xx, y1:M.top+ph, x2:xx, y2:M.top+ph+(labeled?6:3), "class":"axisline"}));
+    if(labeled){
+      svg.appendChild(el("line", {x1:xx, y1:M.top, x2:xx, y2:M.top+ph, "class":"gridline", opacity:"0.5"}));
+      var xl = el("text", {x:xx, y:M.top+ph+22, "class":"tick tabnum", "text-anchor":"middle"});
+      xl.textContent = yr;
+      svg.appendChild(xl);
+    }
+  }
+  var xt = el("text", {x:M.left+pw/2, y:H-8, "class":"axistitle", "text-anchor":"middle"});
+  xt.textContent = "Year published";
+  svg.appendChild(xt);
+
+  // ---- dodge points sharing a year ----
+  var byYear = {};
+  DATA.forEach(function(d){ (byYear[d.y] = byYear[d.y] || []).push(d); });
+  Object.keys(byYear).forEach(function(k){
+    var g = byYear[k].slice().sort(function(a,b){ return a.n - b.n; });
+    var m = g.length;
+    var span = Math.min(0.82, 0.17 * (m - 1));
+    g.forEach(function(d,i){ d.dx = (m===1) ? 0 : (-span/2 + span * i/(m-1)); });
+  });
+
+  // ---- annotation ----
+  var an1 = el("text", {x:sx(2011.7), y:sy(7.55), "class":"anno", "text-anchor":"start"});
+  an1.textContent = "n^r barcodes for linear effort";
+  svg.appendChild(an1);
+  var an2 = el("text", {x:sx(2022.2), y:sy(4.55), "class":"anno", "text-anchor":"middle"});
+  an2.textContent = "droplet / plate cell atlases";
+  svg.appendChild(an2);
+
+  // ---- label offsets ----
+  function labelOffset(lp){
+    if(lp==="a") return {dx:0,  dy:-12, anchor:"middle"};
+    if(lp==="b") return {dx:0,  dy:20,  anchor:"middle"};
+    if(lp==="l") return {dx:-11,dy:4,   anchor:"end"};
+    return {dx:11, dy:4, anchor:"start"};
+  }
+
+  var layer = el("g", {});
+  svg.appendChild(layer);
+  var hitLayer = el("g", {});
+  svg.appendChild(hitLayer);
+
+  DATA.forEach(function(d){
+    d.px = sx(d.y + (d.dx||0));
+    d.py = sy(log10(d.n));
+    var color = d.cat === "ci" ? "var(--ci)" : "var(--sc)";
+
+    if(d.lab){
+      var off = labelOffset(d.lp);
+      var lab = el("text", {x:d.px+off.dx, y:d.py+off.dy, "class":"plabel "+d.cat, "text-anchor":off.anchor});
+      lab.textContent = d.ltext || d.method;
+      layer.appendChild(lab);
+    }
+
+    var mark;
+    if(d.atac){
+      var r = 6.4;
+      mark = el("path", {d:"M "+d.px+" "+(d.py-r)+" L "+(d.px+r)+" "+d.py+" L "+d.px+" "+(d.py+r)+" L "+(d.px-r)+" "+d.py+" Z",
+        fill:color, stroke:"var(--halo)", "stroke-width":1.5, "class":"mark"});
+    } else {
+      mark = el("circle", {cx:d.px, cy:d.py, r:5.4, fill:color, stroke:"var(--halo)", "stroke-width":1.5, "class":"mark"});
+    }
+    d._mark = mark;
+    layer.appendChild(mark);
+
+    var hit = el("circle", {cx:d.px, cy:d.py, r:13, fill:"transparent", "class":"hit", tabindex:"0",
+      role:"button", "aria-label": d.method+", "+d.auth+", "+d.y+", "+fmt(d.n)+" "+(d.n===1?"cell":"cells")+", "+d.mod+", "+d.org});
+    hit.addEventListener("pointerenter", function(ev){ if(!pinned) show(d, ev.clientX, ev.clientY); });
+    hit.addEventListener("pointermove",  function(ev){ if(!pinned) show(d, ev.clientX, ev.clientY); });
+    hit.addEventListener("pointerleave", function(){ if(!pinned) hide(); });
+    hit.addEventListener("focus", function(){ showAtPoint(d); });
+    hit.addEventListener("blur",  function(){ if(!pinned) hide(); });
+    hit.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      if(pinned && active===d){ pinned=false; hide(); }
+      else { showAtPoint(d); pinned=true; }
+    });
+    hitLayer.appendChild(hit);
+  });
+
+  // ---- tooltip ----
+  var pinned = false, active = null;
+  function tipHTML(d){
+    var color = d.cat === "ci" ? "var(--ci)" : "var(--sc)";
+    tip.textContent = "";
+    var val = document.createElement("div"); val.className = "val";
+    var sw = document.createElement("span"); sw.className = "sw"; sw.style.background = color; val.appendChild(sw);
+    var vspan = document.createElement("span");
+    vspan.textContent = (d.approx ? "~" : "") + fmt(d.n) + (d.n===1 ? " cell" : " cells");
+    val.appendChild(vspan);
+    tip.appendChild(val);
+
+    var row2 = document.createElement("div"); row2.className = "row2";
+    var pill = document.createElement("span"); pill.className = "pill"; pill.textContent = d.mod; row2.appendChild(pill);
+    var org = document.createElement("span"); org.className = "org"; org.textContent = d.org; row2.appendChild(org);
+    tip.appendChild(row2);
+
+    var meth = document.createElement("div"); meth.className = "meth";
+    meth.textContent = d.method + " - " + d.auth + ", " + d.y;
+    tip.appendChild(meth);
+
+    var notes = [];
+    if(d.preprint) notes.push("Preprint (not peer-reviewed)");
+    if(d.meta) notes.push("Meta-atlas: integrates prior datasets");
+    if(notes.length){ var nt = document.createElement("div"); nt.className="note"; nt.textContent = notes.join("  |  "); tip.appendChild(nt); }
+
+    var a = document.createElement("a"); a.className = "doi";
+    a.href = "https://doi.org/" + d.doi; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = "doi.org/" + d.doi;
+    tip.appendChild(a);
+  }
+  function place(cx, cy){
+    var wr = wrap.getBoundingClientRect();
+    tip.classList.add("show");
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = cx - wr.left + 16;
+    var y = cy - wr.top + 16;
+    if(x + tw > wr.width - 4) x = cx - wr.left - tw - 16;
+    if(x < 4) x = 4;
+    if(y + th > wr.height - 4) y = cy - wr.top - th - 16;
+    if(y < 4) y = 4;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+  }
+  function setActive(d){
+    if(active && active._mark) active._mark.classList.remove("active");
+    active = d;
+    if(d && d._mark){ d._mark.classList.add("active"); d._mark.parentNode.appendChild(d._mark); }
+  }
+  function show(d, cx, cy){ tipHTML(d); setActive(d); place(cx, cy); }
+  function showAtPoint(d){
+    tipHTML(d); setActive(d);
+    var wr = wrap.getBoundingClientRect();
+    var scale = wr.width / W;
+    place(wr.left + d.px*scale, wr.top + d.py*scale);
+  }
+  function hide(){ tip.classList.remove("show"); setActive(null); }
+  document.addEventListener("click", function(){ if(pinned){ pinned=false; hide(); } });
+
+  // ---- table ----
+  var tb = document.querySelector("#scTable tbody");
+  DATA.slice().sort(function(a,b){ return a.y-b.y || a.n-b.n; }).forEach(function(d){
+    var tr = document.createElement("tr");
+    function td(txt, cls){ var c=document.createElement("td"); if(cls)c.className=cls; c.textContent=txt; return c; }
+    tr.appendChild(td(d.y));
+    var m = td(d.method);
+    var key = document.createElement("span"); key.className="dotkey"; key.style.background = d.cat==="ci"?"var(--ci)":"var(--sc)";
+    m.insertBefore(key, m.firstChild); tr.appendChild(m);
+    tr.appendChild(td(d.mod));
+    tr.appendChild(td((d.approx?"~":"")+fmt(d.n), "num"));
+    tr.appendChild(td(d.org));
+    tr.appendChild(td(d.cat==="ci"?"Combinatorial":(d.meta?"Meta-atlas":"Other")));
+    var dt = document.createElement("td");
+    var a = document.createElement("a"); a.href="https://doi.org/"+d.doi; a.target="_blank"; a.rel="noopener"; a.textContent=d.doi;
+    dt.appendChild(a); tr.appendChild(dt);
+    tb.appendChild(tr);
+  });
+})();
+</script>
